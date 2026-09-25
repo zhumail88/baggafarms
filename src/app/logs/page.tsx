@@ -1,6 +1,9 @@
 import DailyLogForm from "@/components/logs/DailyLogForm";
+import { getActiveFlocks } from "@/app/actions/flocks";
 
-export default function LogsPage() {
+export default async function LogsPage() {
+  const activeFlocks = await getActiveFlocks();
+
   return (
     <div className="p-4 md:p-10 space-y-6 max-w-4xl mx-auto w-full">
       <div className="mb-6">
@@ -8,7 +11,7 @@ export default function LogsPage() {
         <p className="text-zinc-400 mt-1">Submit daily operational metrics to maintain up-to-date flock records.</p>
       </div>
 
-      <DailyLogForm />
+      <DailyLogForm flocks={activeFlocks} />
     </div>
   );
 }
