@@ -1,21 +1,28 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useActionState, useEffect } from "react";
 import { Truck } from "lucide-react";
+import { createDispatch } from "@/app/actions/dispatch";
 
-export default function DispatchForm() {
-  const [isSubmitting, setIsSubmitting] = useState(false);
+export default function DispatchForm({ flocks }: { flocks: any[] }) {
   const [showDeliveryNote, setShowDeliveryNote] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsSubmitting(true);
-    // Simulate submission delay
-    setTimeout(() => {
-      setIsSubmitting(false);
+  const [state, formAction, isPending] = useActionState(
+    async (prevState: any, formData: FormData) => {
+      const res = await createDispatch(formData);
+      if (res?.error) {
+        return { error: res.error };
+      }
+      return { success: true, dispatch_id: res.dispatch_id };
+    },
+    null
+  );
+
+  useEffect(() => {
+    if (state?.success) {
       setShowDeliveryNote(true);
-    }, 1000);
-  };
+    }
+  }, [state?.success]);
 
   if (showDeliveryNote) {
     return (
@@ -47,7 +54,7 @@ export default function DispatchForm() {
         </div>
       </div>
       
-      <form onSubmit={handleSubmit} className="p-5 space-y-6">
+      <form action={formAction} className="p-5 space-y-6">
         
         {/* FLOCK SELECTION */}
         <div className="space-y-4 border-b border-zinc-800 pb-6">
@@ -62,7 +69,9 @@ export default function DispatchForm() {
                 className="flex h-10 w-full rounded-md border border-zinc-800 bg-zinc-950 px-3 py-2 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-emerald-500 text-zinc-50"
               >
                 <option value="">-- Choose Batch --</option>
-                <option value="1">Summer Broiler A</option>
+                {flocks.map(f => (
+                  <option key={f.id} value={f.id}>{f.batch_name}</option>
+                ))}
               </select>
             </div>
             <div className="space-y-2">
@@ -160,12 +169,18 @@ export default function DispatchForm() {
           </div>
         </div>
 
+        {state?.error && (
+          <div className="p-3 rounded-md bg-red-500/10 border border-red-500/20 text-red-500 text-sm">
+            {state.error}
+          </div>
+        )}
+
         <button
           type="submit"
-          disabled={isSubmitting}
+          disabled={isPending}
           className="w-full inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium transition-colors bg-emerald-600 text-white shadow hover:bg-emerald-500 h-12 px-4 py-2 disabled:opacity-50 text-lg mt-4"
         >
-          {isSubmitting ? "Generating Note..." : "Log Dispatch & Generate Note"}
+          {isPending ? "Generating Note..." : "Log Dispatch & Generate Note"}
         </button>
       </form>
     </div>

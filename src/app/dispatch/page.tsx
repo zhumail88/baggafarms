@@ -1,6 +1,9 @@
 import DispatchForm from "@/components/dispatch/DispatchForm";
+import { getActiveFlocks } from "@/app/actions/flocks";
 
-export default function DispatchPage() {
+export default async function DispatchPage() {
+  const activeFlocks = await getActiveFlocks();
+
   return (
     <div className="p-4 md:p-10 space-y-6 max-w-5xl mx-auto w-full">
       <div className="mb-6">
@@ -8,7 +11,7 @@ export default function DispatchPage() {
         <p className="text-zinc-400 mt-1">Manage outgoing bird shipments, record driver details, and generate digital delivery notes.</p>
       </div>
 
-      <DispatchForm />
+      <DispatchForm flocks={activeFlocks} />
     </div>
   );
 }
