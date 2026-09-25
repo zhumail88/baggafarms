@@ -1,10 +1,29 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useActionState, useEffect } from "react";
 import { Plus, X } from "lucide-react";
+import { createFlock } from "@/app/actions/flocks";
 
 export default function FlockCreationModal() {
   const [isOpen, setIsOpen] = useState(false);
+
+  const [state, formAction, isPending] = useActionState(
+    async (prevState: any, formData: FormData) => {
+      const res = await createFlock(formData);
+      if (res?.error) {
+        return { error: res.error };
+      }
+      return { success: true };
+    },
+    null
+  );
+
+  // Close modal on success
+  useEffect(() => {
+    if (state?.success) {
+      setIsOpen(false);
+    }
+  }, [state?.success]);
 
   return (
     <>
@@ -29,7 +48,7 @@ export default function FlockCreationModal() {
               </button>
             </div>
             
-            <form className="p-5 space-y-4">
+            <form action={formAction} className="p-5 space-y-4">
               <div className="space-y-2">
                 <label htmlFor="batch_name" className="text-sm font-medium text-zinc-300">Batch Name</label>
                 <input 
@@ -77,6 +96,12 @@ export default function FlockCreationModal() {
                 </div>
               </div>
 
+              {state?.error && (
+                <div className="p-3 rounded-md bg-red-500/10 border border-red-500/20 text-red-500 text-sm">
+                  {state.error}
+                </div>
+              )}
+
               <div className="pt-4 flex justify-end gap-3">
                 <button
                   type="button"
@@ -87,9 +112,10 @@ export default function FlockCreationModal() {
                 </button>
                 <button
                   type="submit"
-                  className="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium transition-colors bg-emerald-600 text-white shadow hover:bg-emerald-500 h-9 px-4 py-2"
+                  disabled={isPending}
+                  className="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium transition-colors bg-emerald-600 text-white shadow hover:bg-emerald-500 h-9 px-4 py-2 disabled:opacity-50"
                 >
-                  Initialize Batch
+                  {isPending ? "Initializing..." : "Initialize Batch"}
                 </button>
               </div>
             </form>
