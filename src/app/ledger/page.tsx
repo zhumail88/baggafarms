@@ -1,6 +1,6 @@
-import PaymentModal from "@/components/ledger/PaymentModal";
+import TransactionModal from "@/components/ledger/TransactionModal";
+import { getBuyersLedger, getTransactions } from "@/app/actions/ledger";
 
-// Format currency as PKR (e.g., Rs. 50,000)
 const formatPKR = (amount: number) => {
   return new Intl.NumberFormat("en-PK", {
     style: "currency",
@@ -10,23 +10,9 @@ const formatPKR = (amount: number) => {
   }).format(amount).replace("PKR", "Rs.");
 };
 
-export default function LedgerPage() {
-  const buyers = [
-    {
-      id: "b1",
-      name: "Al-Madina Traders",
-      totalCredit: 2500000,
-      totalPaid: 1000000,
-      balance: 1500000,
-    },
-    {
-      id: "b2",
-      name: "Khan Poultry",
-      totalCredit: 850000,
-      totalPaid: 850000,
-      balance: 0,
-    }
-  ];
+export default async function LedgerPage() {
+  const buyers = await getBuyersLedger();
+  const transactions = await getTransactions();
 
   return (
     <div className="p-4 md:p-10 space-y-6 max-w-6xl mx-auto w-full">
@@ -35,16 +21,16 @@ export default function LedgerPage() {
           <h1 className="text-3xl font-bold tracking-tight text-zinc-50">Financial Ledger</h1>
           <p className="text-zinc-400 mt-1">Track buyer debt, running balances, and incoming payments.</p>
         </div>
-        <PaymentModal />
+        <TransactionModal />
       </div>
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 mb-8">
-        {buyers.map((buyer) => (
-          <div key={buyer.id} className="bg-zinc-900 border border-zinc-800 rounded-xl overflow-hidden flex flex-col">
+        {buyers.map((buyer, idx) => (
+          <div key={idx} className="bg-zinc-900 border border-zinc-800 rounded-xl overflow-hidden flex flex-col">
             <div className="p-5 border-b border-zinc-800">
               <h3 className="font-semibold text-lg text-zinc-50 flex items-center justify-between">
                 {buyer.name}
-                {buyer.balance === 0 && (
+                {buyer.balance <= 0 && (
                   <span className="inline-flex items-center rounded-full bg-emerald-500/10 px-2 py-1 text-xs font-medium text-emerald-400 ring-1 ring-inset ring-emerald-500/20">
                     Cleared
                   </span>
@@ -71,6 +57,11 @@ export default function LedgerPage() {
             </div>
           </div>
         ))}
+        {buyers.length === 0 && (
+          <div className="col-span-full p-8 text-center bg-zinc-900/50 border border-zinc-800 rounded-xl">
+             <p className="text-zinc-400">No buyer ledgers active. Log a transaction to begin.</p>
+          </div>
+        )}
       </div>
 
       {/* Transaction History Table */}
@@ -86,28 +77,33 @@ export default function LedgerPage() {
                 <th className="px-6 py-3 font-medium">Type</th>
                 <th className="px-6 py-3 font-medium">Entity / Category</th>
                 <th className="px-6 py-3 font-medium">Amount</th>
-                <th className="px-6 py-3 font-medium">Status</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-zinc-800">
-              <tr className="hover:bg-zinc-800/50 transition-colors">
-                <td className="px-6 py-4 text-zinc-300">Today, 10:45 AM</td>
-                <td className="px-6 py-4">
-                  <span className="text-emerald-400 font-medium">Income</span>
-                </td>
-                <td className="px-6 py-4 text-zinc-300">Al-Madina Traders (Payment)</td>
-                <td className="px-6 py-4 font-medium text-emerald-400">+{formatPKR(1000000)}</td>
-                <td className="px-6 py-4"><span className="text-zinc-400">Paid</span></td>
-              </tr>
-              <tr className="hover:bg-zinc-800/50 transition-colors">
-                <td className="px-6 py-4 text-zinc-300">Yesterday, 14:20 PM</td>
-                <td className="px-6 py-4">
-                  <span className="text-red-400 font-medium">Credit (Dispatch)</span>
-                </td>
-                <td className="px-6 py-4 text-zinc-300">Al-Madina Traders</td>
-                <td className="px-6 py-4 font-medium text-red-400">-{formatPKR(2500000)}</td>
-                <td className="px-6 py-4"><span className="text-amber-500">Pending</span></td>
-              </tr>
+              {transactions.length === 0 ? (
+                <tr><td colSpan={4} className="px-6 py-8 text-center text-zinc-500">No transactions recorded yet.</td></tr>
+              ) : (
+                transactions.map((txn) => (
+                  <tr key={txn.id} className="hover:bg-zinc-800/50 transition-colors">
+                    <td className="px-6 py-4 text-zinc-300">
+                      {new Date(txn.created_at).toLocaleDateString()} {new Date(txn.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                    </td>
+                    <td className="px-6 py-4">
+                      {txn.type === 'income' ? (
+                        <span className="text-emerald-400 font-medium">Income</span>
+                      ) : (
+                        <span className="text-red-400 font-medium">Expense</span>
+                      )}
+                    </td>
+                    <td className="px-6 py-4 text-zinc-300">
+                      {txn.buyer_name || txn.category} {txn.buyer_name ? `(${txn.category})` : ""}
+                    </td>
+                    <td className={`px-6 py-4 font-medium ${txn.type === 'income' ? 'text-emerald-400' : 'text-red-400'}`}>
+                      {txn.type === 'income' ? '+' : '-'}{formatPKR(txn.amount)}
+                    </td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
         </div>

@@ -1,6 +1,9 @@
 import MetricsCards from "@/components/dashboard/MetricsCards";
+import { getDashboardMetrics } from "@/app/actions/dashboard";
 
-export default function DashboardPage() {
+export default async function DashboardPage() {
+  const metrics = await getDashboardMetrics();
+
   return (
     <div className="p-4 md:p-10 space-y-6 max-w-7xl mx-auto w-full">
       <div className="mb-8">
@@ -8,7 +11,7 @@ export default function DashboardPage() {
         <p className="text-zinc-400 mt-1">Real-time farm metrics, profitability analytics, and performance indicators.</p>
       </div>
 
-      <MetricsCards />
+      <MetricsCards metrics={metrics} />
     </div>
   );
 }
